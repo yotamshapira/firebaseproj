@@ -5,6 +5,20 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
+// Node E-Mailer is used for sending E-Mails
+const nodemailer = require('nodemailer');
+
+const gmailEmail = functions.config().gmail.email;
+const gmailPassword = functions.config().gmail.password;
+
+const mailTransport = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: gmailEmail,
+        pass: gmailPassword,
+    },
+});
+
 /**
  * Creates a user in Firebase. Request has 2 parameters
  * @param email mail address of the new user
@@ -30,3 +44,31 @@ exports.createUser = functions.https.onRequest((req, res) => {
         return res.status(500).send(`Error creating new user: ${error}`);
     });
 });
+
+/**
+ * Function that gets triggered when a new Authentication user is created
+ * and:
+ * 1. Sends a simple welcome email
+ * 2. Saves to Firebase Firestore the creation time in the following format:
+ * Users: { key: createdAt, Value: creation time}
+ */
+exports.sendWelcomeEmail = functions.auth.user().onCreate((user) => {
+    const email = user.email; // The email of the user.
+
+    return sendWelcomeEmail(email);
+});
+
+/**
+ * Sends a welcome email to the given user
+ */
+async function sendWelcomeEmail(email) {
+    let opts = {
+        to: email,
+        subject: 'Welcome to my Firebase app'
+    };
+
+    // The user subscribed to the newsletter.
+    await mailTransport.sendMail(opts);
+    console.log('New welcome email sent to:', email);
+    return null;
+}
