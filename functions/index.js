@@ -52,7 +52,15 @@ exports.createUser = functions.https.onRequest((req, res) => {
  * 2. Saves to Firebase Firestore the creation time in the following format:
  * Users: { key: createdAt, Value: creation time}
  */
-exports.handleNewUser = functions.auth.user().onCreate((user) => {
+exports.handleNewUser = functions.auth.user().onCreate((user, eventContext) => {
+
+    // Time out retries after 10 seconds:
+    const eventAgeMs = Date.now() - Date.parse(eventContext.timestamp);
+    const eventMaxAgeMs = 10000;
+    if (eventAgeMs > eventMaxAgeMs) {
+        console.log(`Dropping event ${eventContext} with age[ms]: ${eventAgeMs}`);
+        return Promise.resolve();
+    }
 
     const email = user.email; // The email of the user.
 
