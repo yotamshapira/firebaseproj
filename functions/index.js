@@ -52,11 +52,25 @@ exports.createUser = functions.https.onRequest((req, res) => {
  * 2. Saves to Firebase Firestore the creation time in the following format:
  * Users: { key: createdAt, Value: creation time}
  */
-exports.sendWelcomeEmail = functions.auth.user().onCreate((user) => {
+exports.handleNewUser = functions.auth.user().onCreate((user) => {
+
     const email = user.email; // The email of the user.
 
+    addToFirestore(email);
     return sendWelcomeEmail(email);
 });
+
+function addToFirestore(email) {
+    var db = admin.firestore();
+    var docRef = db.collection('users').doc(email);
+
+    var date = new Date();
+    var timestamp = date.getTime();
+
+    var set = docRef.set({
+        "createdAt": timestamp
+    });
+}
 
 /**
  * Sends a welcome email to the given user
